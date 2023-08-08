@@ -13,19 +13,19 @@ zora = "https://rpc.zora.energy"
 
 pgn = "https://rpc.publicgoods.network"
 anvil = "http://127.0.0.1:8545"
-zora-testnet = "https://testnet.rpc.zora.co"
 
 # TESTNETS
 optimism-goerli = "https://optimism-goerli.publicnode.com"
-base-testnet = "https://rpc.ankr.com/base_goerli"
-zora-tesnet = ""
+base-goerli = "https://rpc.ankr.com/base_goerli"
+zora-testnet = "https://testnet.rpc.zora.co"
 
 mode-testnet = "https://sepolia.mode.network"
 pgn-testnet = "https://sepolia.publicgoods.network"
 
 [etherscan]
 optimism = { key = "${ETHERSCAN_API_KEY_OPTIMISM}" }
-base = { key = "${ETHERSCAN_API_KEY_BASE}" }
 optimism-goerli = { key = "${ETHERSCAN_API_KEY_OPTIMISM}" }
+base = { key = "${ETHERSCAN_API_KEY_BASE}" }
+base-goerli = { key = "${ETHERSCAN_API_KEY_BASE}" }
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

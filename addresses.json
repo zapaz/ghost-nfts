@@ -1,0 +1,38 @@
+{
+  "10": {
+    "Hi": "0x393F71f4afEDF852c589fBA06ED81a2cb3a165e4",
+    "chainName": "optimism"
+  },
+  "8453": {
+    "Hi": "0xFc008F04042530Bf0bd8333FBe45470b514bD847",
+    "chainName": "base"
+  },
+  "7777777": {
+    "Hi": "0xFc008F04042530Bf0bd8333FBe45470b514bD847",
+    "chainName": "zora"
+  },
+  "420": {
+    "ERC6551Account": "0xd1ca741de2d2975822ADf4646Cf0A8AE3Df51c78",
+    "ERC6551Registry": "0xECC12ab909CfaEb5989E35509218f399c8Dc4b4c",
+    "Hi": "0x25F56b5527F5634752Fd2C85564E8d2484cAAEF3",
+    "chainName": "optimism-goerli"
+  },
+  "84531": {
+    "Hi": "0xb5c8CB0846317d82af2DbF90713716B01A2f680a",
+    "ERC6551Account": "0xECC12ab909CfaEb5989E35509218f399c8Dc4b4c",
+    "ERC6551Registry": "0x25F56b5527F5634752Fd2C85564E8d2484cAAEF3",
+    "chainName": "base-goerli"
+  },
+  "999": {
+    "Hi": "0x393F71f4afEDF852c589fBA06ED81a2cb3a165e4",
+    "ERC6551Account": "0x25F56b5527F5634752Fd2C85564E8d2484cAAEF3",
+    "ERC6551Registry": "0xb5c8CB0846317d82af2DbF90713716B01A2f680a",
+    "chainName": "zora-testnet"
+  },
+  "31337": {
+    "ERC6551Account": "0x90193C961A926261B756D1E5bb255e67ff9498A1",
+    "ERC6551Registry": "0x34A1D3fff3958843C43aD80F30b94c510645C316",
+    "Hi": "0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496",
+    "chainName": "anvil"
+  }
+}
