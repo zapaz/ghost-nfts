@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 
 import {ERC6551Registry} from "src/erc6551/ERC6551Registry.sol";
 import {ERC6551Account} from "src/erc6551/ERC6551Account.sol";
-import {ReadWriteJson} from "forge-deploy-lite/ReadWriteJson.sol";
+import {ReadWriteJson} from "@forge-deploy-lite/ReadWriteJson.sol";
 
 contract CreateAccount is Script, ReadWriteJson {
     // ENS NFT for zapaz.eth
