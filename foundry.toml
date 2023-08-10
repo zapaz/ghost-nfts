@@ -17,6 +17,7 @@ anvil = "http://127.0.0.1:8545"
 # TESTNETS
 optimism-goerli = "https://optimism-goerli.publicnode.com"
 base-goerli = "https://rpc.ankr.com/base_goerli"
+base-goerli2 = "https://goerli.base.org"
 zora-testnet = "https://testnet.rpc.zora.co"
 
 mode-testnet = "https://sepolia.mode.network"

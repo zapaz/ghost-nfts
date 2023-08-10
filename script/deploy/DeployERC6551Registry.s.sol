@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 
-import {DeployLite} from "lib/forge-deploy-lite/script/DeployLite.sol";
+import {DeployLite} from "forge-deploy-lite/DeployLite.sol";
 import {ERC6551Registry} from "src/erc6551/ERC6551Registry.sol";
 
 contract DeployERC6551Registry is DeployLite {
