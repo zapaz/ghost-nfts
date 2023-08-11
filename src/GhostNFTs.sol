@@ -1,96 +1,159 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// import {console} from "forge-std/Test.sol";
+
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {IGhostNFTs} from "./IGhostNFTs.sol";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NFTRegistry registers one original NFT as a ghost NFT with these properties :
-// - NFTRegistry singleton has the same deterministic address on all chains
-// - NFTRegistry is an ERC721 Metadata NFT collection
+// GhostNFTs registers one original NFT as a ghost NFT with these properties :
+// - GhostNFTs singleton has the same deterministic address on all chains
+// - GhostNFTs is an ERC721 Metadata NFT collection
 // - ghost NFT can be registered on same or another evm chain than original NFT
 // - ghost NFT owner is set to NFT owner AT a specific block (and timestamp) of original chain
 // - ghost NFT tokenId is equal to the hash of chainId, collection address and tokenId of original NFT
 // - when original NFT collection is ERC721Metadata : ghost NFT tokenURI is equal original NFT tokenURI
-// - NFTRegistries communicates one by one with the help of inter-blockchain communication service
+// - GhostNFTs communicates one by one with the help of inter-blockchain communication service
 //   (LayerZero, Hyperlane or Chainlink CCIP)
-// - this NFTRegistry could be combined with ERC6515 registry...
+// - GhostNFTs could be combined with ERC6515 registry...
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-contract GhostNFTs is ERC721, ERC721URIStorage {
+contract GhostNFTs is IGhostNFTs, ERC721, ERC721URIStorage {
     address public immutable entryPoint;
 
     struct TokenData {
+        uint256 ghostTokenId;
         uint256 chainId;
         address collection;
         uint256 tokenId;
         address owner;
         string uri;
         uint256 timestamp;
-        uint256 ghostTokenId;
     }
 
-    mapping(uint256 => uint256) public lastUpdateTimestamp;
+    mapping(uint256 => uint256) public syncLastTimestamp;
 
     constructor(address entryPoint_) ERC721("Ghost NFTs", "GHOST") {
         entryPoint = entryPoint_;
     }
 
     modifier onlyRegistry() {
-        require(msg.sender == address(this) || msg.sender == entryPoint, "Only registry, local or remote");
+        require(msg.sender == address(this) || msg.sender == entryPoint, "Only registry or entry point");
         _;
     }
 
-    function getTokenData(address collection, uint256 tokenId) public view returns (TokenData memory tokenData) {
-        return (
-            TokenData(
-                block.chainid,
-                collection,
-                tokenId,
-                ERC721(collection).ownerOf(tokenId),
-                ERC721(collection).tokenURI(tokenId),
-                block.timestamp,
-                uint256(keccak256(abi.encode(block.chainid, collection, tokenId)))
-            )
-        );
+    function syncToken(uint256 chainId, address collection, uint256 tokenId)
+        public
+        override(IGhostNFTs)
+        returns (uint256)
+    {
+        require(chainId > 0, "Wrong chain ID");
+        require(collection != address(0), "Bad collection");
+
+        uint256 ghostTokenId = syncTokenId(chainId, collection, tokenId);
+        TokenData memory tokenData = TokenData(ghostTokenId, chainId, collection, tokenId, address(0), "", 0);
+
+        return _syncToken(_getTokenData(tokenData));
     }
 
-    function _encodeTokenData(address collection, uint256 tokenId) internal view returns (bytes memory) {
-        return abi.encode(getTokenData(collection, tokenId));
+    function syncTokenId(uint256 chainId, address collection, uint256 tokenId)
+        public
+        pure
+        override(IGhostNFTs)
+        returns (uint256)
+    {
+        return uint256(keccak256(abi.encode(chainId, collection, tokenId)));
     }
 
-    function _decodeTokenData(bytes memory data) internal pure returns (uint256, address, string memory, uint256) {
-        return abi.decode(data, (uint256, address, string, uint256));
+    function _tuple(TokenData memory t)
+        internal
+        pure
+        returns (uint256, uint256, address, uint256, address, string memory, uint256)
+    {
+        return (t.ghostTokenId, t.chainId, t.collection, t.tokenId, t.owner, t.uri, t.timestamp);
     }
 
-    function _setLastUpdateTimestamp(uint256 tokenId, uint256 timestamp) internal {
-        lastUpdateTimestamp[tokenId] = timestamp;
-    }
+    function _getTokenData(TokenData memory tokenData) internal view returns (TokenData memory) {
+        (
+            uint256 ghostTokenId,
+            uint256 chainId,
+            address collection,
+            uint256 tokenId,
+            address owner,
+            string memory uri,
+            uint256 timestamp
+        ) = _tuple(tokenData);
 
-    function register(uint256 chainId, address collection, uint256 tokenId) public {
-        // Same blockchain can get info easily
         if (chainId == block.chainid) {
-            _safeMint(getTokenData(collection, tokenId));
+            owner = ERC721(collection).ownerOf(tokenId);
+            uri = ERC721(collection).tokenURI(tokenId);
+            timestamp = block.timestamp;
+        }
+
+        return (TokenData(ghostTokenId, chainId, collection, tokenId, owner, uri, timestamp));
+    }
+
+    function _syncToken(TokenData memory tokenData) internal returns (uint256) {
+        // if (tokenData.chainId == block.chainid) {
+        //     _syncTokenLocal(tokenData);
+        // } else {
+        //     _syncTokenSend(tokenData);
+        // }
+        _syncTokenSend(tokenData);
+        return tokenData.ghostTokenId;
+    }
+
+    function _syncTokenSend(TokenData memory tokenData) internal onlyRegistry {
+        bytes memory data = abi.encode(tokenData);
+
+        // console.log("_syncTokenRequest:", tokenData.chainId);
+        // console.logBytes(data);
+
+        // sendMessage(tokenData.chainId, data);
+        _syncTokenReceive(data);
+    }
+
+    function _syncTokenReceive(bytes memory data) internal onlyRegistry {
+        // console.log("receiveMessage:");
+        // console.logBytes(data);
+
+        TokenData memory tokenData = abi.decode(data, (TokenData));
+        _syncTokenLocal(tokenData);
+    }
+
+    function _syncTokenLocal(TokenData memory tokenData) internal {
+        (
+            uint256 ghostTokenId,
+            uint256 chainId,
+            address collection,
+            uint256 tokenId,
+            address owner,
+            string memory uri,
+            uint256 timestamp
+        ) = _tuple(tokenData);
+        require(chainId == block.chainid, "Wrong chain");
+        require(collection != address(0), "No collection");
+        require(ghostTokenId == syncTokenId(chainId, collection, tokenId), "Wrong Ghost ID");
+        require(syncLastTimestamp[ghostTokenId] < timestamp, "Bad time");
+
+        syncLastTimestamp[ghostTokenId] = timestamp;
+
+        if (_exists(ghostTokenId)) {
+            address lastOwner = ownerOf(ghostTokenId);
+            if (lastOwner != owner) {
+                safeTransferFrom(lastOwner, owner, ghostTokenId);
+            }
+            if (keccak256(abi.encodePacked(tokenURI(ghostTokenId))) != keccak256(abi.encodePacked(uri))) {
+                _setTokenURI(ghostTokenId, uri);
+            }
         } else {
-            getTokenDataRemote(chainId, collection, tokenId);
+            _safeMint(owner, ghostTokenId);
+            _setTokenURI(ghostTokenId, uri);
         }
     }
 
-    function sendMessage(uint256 chaiId, bytes memory data) public onlyRegistry {}
-
-    function getTokenDataRequest(uint256 chainId, address collection, uint256 tokenId) internal onlyRegistry {
-        bytes memory data = abi.encode(collection, tokenId);
-        sendMessage(chainId, data);
-    }
-
-    function getTokenDataAnswer(bytes memory data) public onlyRegistry {
-        _safeMint(abi.decode(data, (TokenData)));
-    }
-
-    function _safeMint(TokenData memory tokenData) internal {
-        _safeMint(tokenData.owner, tokenData.ghostTokenId);
-        _setTokenURI(tokenData.ghostTokenId, tokenData.uri);
-        _setLastUpdateTimestamp(tokenData.ghostTokenId, tokenData.timestamp);
-    }
+    // STANDARD FUNCTIONS
 
     function _burn(uint256 ghostTokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(ghostTokenId);
