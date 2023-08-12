@@ -31,20 +31,20 @@ contract GhostNFTsTest is Test {
         simpleNFT.safeMint(owner, tokenId);
     }
 
-    function test_syncToken() public {
-        uint256 _ghostTokenId = ghostNFTs.syncTokenId(chainId, collection, tokenId);
+    function test_syncGhost() public {
+        uint256 _ghostTokenId = ghostNFTs.getGhostId(chainId, collection, tokenId);
         assert(ghostNFTs.syncLastTimestamp(_ghostTokenId) == 0);
 
-        uint256 ghostTokenId_ = ghostNFTs.syncToken(chainId, collection, tokenId);
+        uint256 ghostTokenId_ = ghostNFTs.syncGhost(chainId, collection, tokenId);
 
         assert(ghostTokenId_ == _ghostTokenId);
         assert(ghostNFTs.syncLastTimestamp(ghostTokenId_) > 0);
     }
 
-    function test_syncToken_twice() public {
-        ghostNFTs.syncToken(chainId, collection, tokenId);
+    function test_syncGhost_twice() public {
+        ghostNFTs.syncGhost(chainId, collection, tokenId);
 
         vm.expectRevert();
-        ghostNFTs.syncToken(chainId, collection, tokenId);
+        ghostNFTs.syncGhost(chainId, collection, tokenId);
     }
 }
